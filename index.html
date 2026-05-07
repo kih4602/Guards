@@ -1,298 +1,222 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>경비실 QR 인식 · 혈압/음주 입력</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>MSDS 모바일 뷰어</title>
+  <script>
+    window.__CONFIG__ = {
+      repoOwner: "kih4602",
+      repoName:  "MSDS",
+      branch:    "main",
+      dataPath:  "",
+      logoUrl:   "https://raw.githubusercontent.com/kih4602/picture/main/%EC%97%90%EB%84%88%EC%A7%80%ED%94%8C%EB%9F%AC%EC%8A%A4%EB%A1%9C%EA%B3%A0.png",
+      // Google Docs Viewer를 기본으로 사용 (범용성 극대화)
+      pdfViewerBase: "https://docs.google.com/viewer"
+    };
+  </script>
   <style>
-    :root{--c-bg:#ffffff;--c-accent:#3EDB86;--c-ink:#0A1E2E}
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;font-family:"Nanum Gothic",system-ui,Arial,sans-serif;background:var(--c-bg);color:var(--c-ink)}
-    .wrap{max-width:640px;margin:0 auto;padding:16px}
-    header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
-    .brand{font-weight:700}
-    .btn{border:0;border-radius:12px;padding:12px 14px;background:var(--c-accent);color:#0A1E2E;cursor:pointer;font-weight:700}
-    .btn:disabled{opacity:.45;cursor:not-allowed}
-    .btn-outline{background:#fff;border:1px solid #e7e7e7;color:var(--c-ink);border-radius:12px;padding:10px 12px}
-    :focus-visible{outline:2px solid var(--c-accent);outline-offset:2px}
-    .card{border:1px solid #e7e7e7;border-radius:14px;padding:14px;margin:12px 0;background:#fff}
-    .muted{font-size:12px;opacity:.75}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .grid{display:grid;gap:8px}
-    .status-badge{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent}
-    .ok{background:#e8fff2;border-color:#bfead2}
-    .warn{background:#fff7e6;border-color:#ffe1a8}
-    .error{background:#ffe8e8;border-color:#ffc6c6}
-    .inline-note{padding:10px;border-left:4px solid var(--c-accent);background:#f8fffb;border-radius:10px}
-    .qrbox{display:flex;align-items:center;justify-content:center;border:1px dashed #cbd5e1;border-radius:12px;min-height:220px;background:#fff}
-    input[type="number"],input[type="text"]{width:100%;padding:10px;border:1px solid #e7e7e7;border-radius:10px}
-    .scanner-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
-    .scanner{background:#fff;border-radius:14px;padding:12px;width:100%;max-width:520px}
-    .scanner video{width:100%;border-radius:10px;background:#000;aspect-ratio:3/4}
-    .toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0A1E2E;color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;z-index:1100;display:none}
+    :root{
+      --brand:#0A1E2E; --bg:#FFFFFF; --fg:#111315;
+      --muted:#5b6b79; --radius:14px; --shadow:0 8px 24px rgba(10,30,46,.08);
+    }
+    *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font:16px/1.5 system-ui, -apple-system, sans-serif;
+    }
+    header{position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:2px solid var(--brand); padding:10px;}
+    .topbar{display:flex; align-items:center; gap:10px; max-width:800px; margin:0 auto;}
+    .logo{height:34px; width:auto;}
+    
+    .search-wrap{
+      display:flex; align-items:center; gap:8px; flex:1;
+      border:2px solid var(--brand); border-radius:999px; padding:6px 12px;
+    }
+    .search-wrap input{border:0; outline:none; width:100%; font-size:16px;}
+
+    main{padding:12px; max-width:800px; margin:0 auto;}
+    .grid{display:grid; gap:12px; grid-template-columns:1fr;}
+    
+    .card{
+      border:2px solid var(--brand); border-radius:var(--radius);
+      padding:16px; background:#fff; box-shadow:var(--shadow);
+      cursor:pointer; font-weight:bold; font-size:17px;
+    }
+
+    /* 뷰어 영역 */
+    .viewer-container { display: flex; flex-direction: column; height: calc(100vh - 80px); gap: 10px; }
+    .viewer-toolbar { display: flex; justify-content: space-between; align-items: center; }
+    .viewer-frame-wrap { 
+      flex: 1; border: 2px solid var(--brand); border-radius: var(--radius); 
+      overflow: hidden; background: #eee; position: relative;
+    }
+    iframe { width: 100%; height: 100%; border: 0; }
+    
+    .btn {
+      appearance:none; border:2px solid var(--brand); background:#fff; 
+      color:var(--brand); border-radius:10px; padding:10px 16px; 
+      font-weight:bold; cursor:pointer; font-size:14px;
+    }
+    .btn-primary { background: var(--brand); color: #fff; }
+
+    .loading-overlay {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      text-align: center; color: var(--muted); pointer-events: none;
+    }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="경비실 QR 인식 화면">
-    <header>
-      <div class="brand">GS칼텍스 인천물류센터 · 경비실</div>
-      <span class="status-badge ok">오프라인 데모</span>
-    </header>
 
-    <section class="card" role="region" aria-labelledby="h-title">
-      <h1 id="h-title" style="margin:0 0 6px 0">QR 인식 · 혈압/음주 입력</h1>
-      <p class="inline-note" style="font-weight:700;font-size:16px">QR 인식하기 → 결과 확인 → 혈압·음주 입력 → 확인</p>
-
-      <div class="row" style="margin-top:8px">
-        <button class="btn" id="scanBtn" aria-label="QR 인식하기">QR 인식하기</button>
-        <button class="btn-outline" id="manualToggle" aria-label="수동 입력 전환">수동 입력</button>
-      </div>
-
-      <!-- 수동 입력 박스 -->
-      <div id="manualBox" class="row" style="margin-top:8px;display:none">
-        <input id="manualCode" type="text" inputmode="latin" placeholder="코드 입력 (예: TEST1103)" aria-label="QR 코드 수동 입력">
-        <button class="btn-outline" id="applyManual">적용</button>
-      </div>
-    </section>
-
-    <!-- 결과 카드 -->
-    <section class="card" role="region" aria-labelledby="h-result">
-      <h2 id="h-result" style="margin:0 0 8px 0">인식 결과</h2>
-      <div class="row" style="gap:10px">
-        <span id="authBadge" class="status-badge muted" aria-live="polite">대기</span>
-        <div class="muted">코드: <strong id="codeText">-</strong></div>
-      </div>
-      <div style="margin-top:6px">
-        <div><strong>이름:</strong> <span id="nameText">-</span></div>
-        <div><strong>공사명:</strong> <span id="workText">-</span></div>
-      </div>
-      <div id="denyBox" class="inline-note" style="display:none;margin-top:8px;background:#fff5f5;border-left-color:#ff6b6b">
-        해당 출입자는 <strong>공사 출입 허가를 받지 못한 사람</strong>입니다.
-      </div>
-    </section>
-
-    <!-- 입력 카드 -->
-    <section class="card" role="region" aria-labelledby="h-inputs">
-      <h2 id="h-inputs" style="margin:0 0 8px 0">혈압 · 음주 결과 입력</h2>
-      <div class="grid">
-<label class="row" style="justify-content:space-between">
-  <span style="min-width:130px">최고 혈압(수축기, mmHg)</span>
-  <input id="bpMax" type="number" min="0" max="300" placeholder="예: 120" aria-label="최고 혈압(수축기)">
-</label>
-<label class="row" style="justify-content:space-between">
-  <span style="min-width:130px">최저 혈압(이완기, mmHg)</span>
-  <input id="bpMin" type="number" min="0" max="200" placeholder="예: 80" aria-label="최저 혈압(이완기)">
-</label>
-        <div class="row" style="gap:6px">
-          <input id="alcOver" type="checkbox" aria-label="음주 수치 초과">
-          <label for="alcOver">음주 수치 초과</label>
-        </div>
-        <div class="row" style="gap:8px">
-          <span class="muted">상태:</span>
-          <span id="stateBadge" class="status-badge">대기</span>
-          <span id="bpWarn" class="status-badge warn" style="display:none">주의: 150 이상</span>
-        </div>
-      </div>
-      <div class="row" style="justify-content:flex-end;margin-top:8px">
-        <button class="btn" id="confirmBtn" disabled aria-label="확인하여 담당자 알림">확인(담당자 알림)</button>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- 스캐너 오버레이 -->
-  <div class="scanner-overlay" id="scannerLayer" aria-hidden="true">
-    <div class="scanner" role="dialog" aria-label="QR 스캐너">
-      <video id="qrVideo" playsinline autoplay muted></video>
-      <div class="row" style="justify-content:flex-end;margin-top:8px">
-        <button class="btn-outline" id="closeScanner">닫기</button>
-      </div>
-      <p class="muted">카메라가 보이지 않으면 권한을 허용하거나 수동 입력을 사용하세요.</p>
+<header>
+  <div class="topbar">
+    <img id="logo" class="logo" alt="Logo" />
+    <div id="searchBox" class="search-wrap">
+      <input id="searchInput" type="search" placeholder="MSDS 검색..." autocomplete="off" />
     </div>
+    <button id="btnHome" class="btn hidden">홈</button>
   </div>
+</header>
 
-  <!-- 토스트 -->
-  <div class="toast" id="toast" role="status" aria-live="polite">담당자에게 알림을 전송했습니다.</div>
+<main id="content">
+  <div id="status" class="card">목록을 불러오는 중...</div>
+  
+  <!-- 리스트 섹션 -->
+  <section id="listSection" class="grid hidden"></section>
 
-  <script>
-    // ===== 데모 레지스트리: QR 코드 → 출입자 정보 매핑 =====
-    const registry = {
-      'TEST1103': { name: '김철수', work: '메트로씨앤씨, 안전난간 설치공사' }
+  <!-- 뷰어 섹션 -->
+  <section id="viewerSection" class="viewer-container hidden">
+    <div class="viewer-toolbar">
+      <div id="currentTitle" style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:50vw;"></div>
+      <div style="display:flex; gap:6px;">
+        <a id="directDownload" class="btn" target="_blank">원본보기</a>
+        <button id="closeViewer" class="btn btn-primary">닫기</button>
+      </div>
+    </div>
+    <div class="viewer-frame-wrap">
+      <div id="iframeLoading" class="loading-overlay">문서를 여는 중...<br>(시간이 걸릴 수 있습니다)</div>
+      <iframe id="pdfFrame" src="about:blank"></iframe>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const cfg = window.__CONFIG__;
+  const state = { items: [], current: null };
+
+  const $status = document.getElementById('status');
+  const $listSection = document.getElementById('listSection');
+  const $viewerSection = document.getElementById('viewerSection');
+  const $pdfFrame = document.getElementById('pdfFrame');
+  const $searchInput = document.getElementById('searchInput');
+  const $searchBox = document.getElementById('searchBox');
+  const $btnHome = document.getElementById('btnHome');
+  const $directDownload = document.getElementById('directDownload');
+
+  // 로고 설정
+  document.getElementById('logo').src = cfg.logoUrl;
+
+  function getDisplayName(filename) {
+    return filename.replace(/\.[^/.]+$/, "").replace(/^\d+[_]/, "").replace(/_MSDS/i, "");
+  }
+
+  async function fetchFiles(path = "") {
+    const url = `https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/contents/${path}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    let files = [];
+    for (let item of data) {
+      if (item.type === "file" && item.name.toLowerCase().endsWith(".pdf")) {
+        files.push(item);
+      } else if (item.type === "dir") {
+        const sub = await fetchFiles(item.path);
+        files = files.concat(sub);
+      }
+    }
+    return files;
+  }
+
+  function renderList(list) {
+    $listSection.innerHTML = '';
+    list.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.textContent = getDisplayName(item.name);
+      div.onclick = () => openViewer(item);
+      $listSection.appendChild(div);
+    });
+    $listSection.classList.remove('hidden');
+    $status.classList.add('hidden');
+  }
+
+  function openViewer(item) {
+    state.current = item;
+    const displayName = getDisplayName(item.name);
+    document.getElementById('currentTitle').textContent = displayName;
+    
+    // Google Docs Viewer URL 생성
+    const viewerUrl = `${cfg.pdfViewerBase}?url=${encodeURIComponent(item.download_url)}&embedded=true`;
+    
+    $pdfFrame.src = viewerUrl;
+    $directDownload.href = item.download_url; // 뷰어 안뜰 때를 대비한 원본 링크
+    
+    $listSection.classList.add('hidden');
+    $searchBox.classList.add('hidden');
+    $viewerSection.classList.remove('hidden');
+    $btnHome.classList.remove('hidden');
+
+    document.getElementById('iframeLoading').classList.remove('hidden');
+    $pdfFrame.onload = () => {
+      document.getElementById('iframeLoading').classList.add('hidden');
     };
-
-    // ===== 엘리먼트 =====
-    const scanBtn = document.getElementById('scanBtn');
-    const manualToggle = document.getElementById('manualToggle');
-    const manualBox = document.getElementById('manualBox');
-    const manualCode = document.getElementById('manualCode');
-    const applyManual = document.getElementById('applyManual');
-
-    const authBadge = document.getElementById('authBadge');
-    const codeText = document.getElementById('codeText');
-    const nameText = document.getElementById('nameText');
-    const workText = document.getElementById('workText');
-    const denyBox = document.getElementById('denyBox');
-
-const bpMax = document.getElementById('bpMax');
-const bpMin = document.getElementById('bpMin');
-    const bpWarn = document.getElementById('bpWarn');
-    const alcOver = document.getElementById('alcOver');
-    const stateBadge = document.getElementById('stateBadge');
-    const confirmBtn = document.getElementById('confirmBtn');
-
-    const scannerLayer = document.getElementById('scannerLayer');
-    const closeScanner = document.getElementById('closeScanner');
-    const qrVideo = document.getElementById('qrVideo');
-    const toast = document.getElementById('toast');
-
-    // ===== 상태 =====
-    let mediaStream = null;
-    let scanning = false;
-    let detector = null;
-    let currentCode = null;   // 마지막 인식/입력 코드
-    let authorized = false;   // 허가 여부
-
-    // ===== UI 유틸 =====
-    function setBadge(el, type, text){
-      el.className = 'status-badge ' + (type||'');
-      el.textContent = text;
-    }
-    function toastShow(msg){
-      toast.textContent = msg || '알림을 전송했습니다.';
-      toast.style.display = 'block';
-      setTimeout(()=> toast.style.display='none', 1600);
-    }
-
-    // ===== 결과 적용 =====
-function applyResult(code){
-  currentCode = (code || '').trim();
-  codeText.textContent = currentCode || '-';
-
-  // 레지스트리 조회 시 대소문자 무시
-  const key = currentCode.toUpperCase();
-  const rec = registry[key];
-  authorized = !!rec;
-
-  if(authorized){
-    setBadge(authBadge, 'ok', '인증됨');
-    nameText.textContent = rec.name;
-    workText.textContent = rec.work;
-    denyBox.style.display = 'none';
-    confirmBtn.disabled = false;
-  }else{
-    setBadge(authBadge, 'error', '허가 미승인');
-    nameText.textContent = '-';
-    workText.textContent = '-';
-    denyBox.style.display = 'block';
-    confirmBtn.disabled = true;
   }
-  updateEntryState();
-}
 
-
-    // ===== 상태 계산(혈압/음주) =====
-  function updateEntryState(){
-  // 최고/최저 파싱
-  const maxVal = parseInt(bpMax.value, 10);
-  const minVal = parseInt(bpMin.value, 10);
-  const high = !isNaN(maxVal) && maxVal >= 150;
-
-  // 경고 배지: 최고 150 이상일 때만 표시
-  bpWarn.style.display = high ? 'inline-block' : 'none';
-
-  if(!authorized){
-    setBadge(stateBadge, 'error', '허가 미승인');
-    return;
+  function closeViewer() {
+    $pdfFrame.src = "about:blank";
+    $viewerSection.classList.add('hidden');
+    $btnHome.classList.add('hidden');
+    $searchBox.classList.remove('hidden');
+    $listSection.classList.remove('hidden');
   }
-  if(alcOver.checked){
-    setBadge(stateBadge, 'error', '출입불가(음주)');
-  }else if(high){
-    setBadge(stateBadge, 'warn', '주의(혈압)');
-  }else{
-    setBadge(stateBadge, 'ok', '입장 가능');
+
+  // 검색 필터
+  $searchInput.oninput = () => {
+    const q = $searchInput.value.toLowerCase();
+    const filtered = state.items.filter(i => i.name.toLowerCase().includes(q));
+    renderList(filtered);
+  };
+
+  $btnHome.onclick = closeViewer;
+  document.getElementById('closeViewer').onclick = closeViewer;
+
+  // 초기화
+  async function init() {
+    try {
+      state.items = await fetchFiles(cfg.dataPath);
+      state.items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      
+      const params = new URLSearchParams(location.search);
+      const query = params.get('q');
+
+      if (query) {
+        const match = state.items.find(i => i.name.toLowerCase().includes(query.toLowerCase()));
+        if (match) {
+          openViewer(match);
+        } else {
+          renderList(state.items);
+        }
+      } else {
+        renderList(state.items);
+      }
+    } catch (e) {
+      $status.textContent = "오류가 발생했습니다. 페이지를 새로고침 해주세요.";
+    }
   }
-}
 
-
-    // ===== 스캐너 =====
-    async function openScanner(){
-      scannerLayer.style.display = 'flex';
-      scannerLayer.setAttribute('aria-hidden','false');
-      try{
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
-          audio:false
-        });
-        qrVideo.srcObject = mediaStream;
-        await qrVideo.play();
-        startDetectLoop();
-      }catch(e){
-        alert('카메라를 사용할 수 없습니다. 수동 입력을 사용하세요.\n'+(e.message||e));
-        closeScannerPane();
-        manualBox.style.display = 'flex';
-      }
-    }
-    function closeScannerPane(){
-      scannerLayer.style.display = 'none';
-      scannerLayer.setAttribute('aria-hidden','true');
-      if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
-      scanning = false;
-    }
-    async function startDetectLoop(){
-      scanning = true;
-      if('BarcodeDetector' in window){
-        try{ detector = new BarcodeDetector({formats:['qr_code']}); }
-        catch{ detector = null; }
-      }
-      if(!detector){
-        alert('이 브라우저는 QR 인식을 지원하지 않습니다. 수동 입력을 사용하세요.');
-        closeScannerPane();
-        manualBox.style.display = 'flex';
-        return;
-      }
-      (async function loop(){
-        if(!scanning) return;
-        try{
-          const codes = await detector.detect(qrVideo);
-          if(codes && codes.length){
-            const txt = (codes[0].rawValue||'').trim();
-            applyResult(txt);
-            closeScannerPane();
-            return;
-          }
-        }catch(e){ /* ignore and keep looping */ }
-        requestAnimationFrame(loop);
-      })();
-    }
-
-    // ===== 이벤트 =====
-    scanBtn.addEventListener('click', openScanner);
-    closeScanner.addEventListener('click', closeScannerPane);
-    manualToggle.addEventListener('click', ()=>{
-      manualBox.style.display = (manualBox.style.display==='flex' ? 'none' : 'flex');
-    });
-    applyManual.addEventListener('click', ()=> applyResult(manualCode.value));
-
-bpMax.addEventListener('input', updateEntryState);
-bpMin.addEventListener('input', updateEntryState);
-    alcOver.addEventListener('change', updateEntryState);
-
-    confirmBtn.addEventListener('click', ()=>{
-      if(!authorized){ return; }
-      // 실제 전송 대신 토스트로 모의
-      toastShow('담당자에게 알림을 전송했습니다.');
-      // 간단한 로그(콘솔)
-      console.log('[ALERT]', {
-        code: currentCode, name: nameText.textContent, work: workText.textContent,
-        bp_sys: bpSys.value, alcohol_over: alcOver.checked, status: stateBadge.textContent
-      });
-    });
-
-    // 초기 배지
-    setBadge(authBadge, '', '대기');
-    setBadge(stateBadge, '', '대기');
-  </script>
+  init();
+})();
+</script>
 </body>
 </html>
